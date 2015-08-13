@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AWS S3 URL Signer</title>
+
+    <script src="js/jquery-1.11.2.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="js/datetimepicker/jquery.datetimepicker.css">
+    <script src="js/datetimepicker/jquery.datetimepicker.js"></script>
+    <script src="js/sha1.js"></script>
+    <script>
+        function hmacsha1(data, key) {
+            return new jsSHA(data, 'TEXT').getHMAC(key, 'TEXT', 'SHA-1', 'B64');
+        }
+
+        function sign(expires, key, bucket, path) {
+            return hmacsha1('GET\n\n\n' + expires + '\n/' + bucket + '/' + path, key);
+        }
+
+        function signedUrl(expires, bucket, path, accesskey, secret) {
+            var signature = sign(expires, secret, bucket, path);
+            return 'https://' + bucket + '.s3.amazonaws.com/' + path + '?AWSAccessKeyId=' + accesskey + '&Expires='
+                    + expires + '&Signature=' + encodeURIComponent(signature);
+        }
+
+        function computesha() {
+            var expires = $('#expires').val();
+            var bucket = $('#bucket').val();
+            var path = $('#path').val();
+            var accesskey = $('#accesskey').val();
+            var secret = $('#secret').val();
+
+            $('#output').val(signedUrl(expires, bucket, path, accesskey, secret));
+        }
+
+        $(document).ready(function() {
+            $('#expires').datetimepicker({format: 'unixtime', step: 1, onChangeDateTime: computesha});
+            $('input').on('input', function() {
+                computesha();
+            })
+        });
+    </script>
+    <style>
+        input[type=text] { width: 500px; }
+    </style>
+</head>
+<body>
+<h1>AWS S3 URL Signer</h1>
+<p>The implementation is fully Javascript, so no details will be sent to a server.</p>
+<table>
+    <tr><td>Expires:</td><td><input type="text" id="expires"></td></tr>
+    <tr><td>Bucket:</td><td><input type="text" id="bucket"></td></tr>
+    <tr><td>Path:</td><td><input type="text" id="path"></td></tr>
+    <tr><td>Access key:</td><td><input type="text" id="accesskey"></td></tr>
+    <tr><td>Secret:</td><td><input type="text" id="secret"></td></tr>
+    <tr><td><input type="button" onclick="computesha()" value="Sign"/></td></tr>
+    <tr><td>URL:</td><td><input type="text" id="output"></td></tr>
+</table>
+</body>
+</html>
